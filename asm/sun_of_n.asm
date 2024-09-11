@@ -1,64 +1,74 @@
 section .data
-    prompt db "Enter a number (n): ", 0
-    prompt_len equ $-prompt
+    ask db "Enter a number: ", 0
+    asklen equ $-ask
 
+    display db "The sum up to the given number is: ", 0
+    displaylen equ $-display
+
+    format db "%d", 0
     newline db 10, 0
 
-    result_msg db "The sum is: ", 0
-    result_len equ $-result_msg
-
 section .bss
-    n resb 4
-    sum resb 4
-    input resb 10
+    num resb 10
+    sum resd 1
+    ans resb 10
 
 section .text
+    extern atoi
+    extern sprintf
     global _start
 
 _start:
     mov eax, 4
     mov ebx, 1
-    mov ecx, prompt
-    mov edx, prompt_len
+    mov ecx, ask
+    mov edx, asklen
     int 0x80
 
     mov eax, 3
-    mov ebx, 0
-    mov ecx, input
+    mov ebx, 0 
+    mov ecx, num
     mov edx, 10
     int 0x80
 
-    mov eax, input
-    sub eax, '0'
-    mov [n], eax
+    add byte [num + eax - 1], 0
 
-    xor eax, eax
-    mov [sum], eax
+    push num
+    call atoi
+    add esp, 4
 
-    mov ecx, [n]
-    xor ebx, ebx
-
-calc_sum:
-    add ebx, ecx
-    dec ecx
-    jnz calc_sum
-
-    mov [sum], ebx
-
-    mov eax, 4
+    mov dword [sum], 0
+    mov ecx, eax
     mov ebx, 1
-    mov ecx, result_msg
-    mov edx, result_len
-    int 0x80
+
+begin:
+    cmp ebx, ecx
+    jg end
 
     mov eax, [sum]
-    add eax, '0'
+    add eax, ebx
     mov [sum], eax
+
+    inc ebx
+    jmp begin
+
+end:
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, display
+    mov edx, displaylen
+    int 0x80
+
+    push dword [sum]
+    push format
+    push ans
+    call sprintf
+    add esp, 12
 
     mov eax, 4
     mov ebx, 1
-    mov ecx, sum
-    mov edx, 1
+    mov ecx, ans
+    mov edx, 10
     int 0x80
 
     mov eax, 4
@@ -68,5 +78,5 @@ calc_sum:
     int 0x80
 
     mov eax, 1
-    xor ebx, ebx
+    mov ebx, 0
     int 0x80
